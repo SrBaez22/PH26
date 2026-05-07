@@ -1,0 +1,19 @@
+﻿ID,Tipo,Descrição,Prioridade,Estabilidade
+RF1,Funcional,"Coletar continuamente dados de temperatura, umidade, pressão, partículas e gases via sensores.",Essencial,Pouco Estável
+RF2,Funcional,Armazenar os dados coletados em banco de dados na nuvem (ThingSpeak/Servidor Web).,Essencial,Estável
+RF3,Funcional,Disponibilizar dashboard online com gráficos históricos e dados em tempo real.,Importante,Estável
+RF4,Funcional,"Permitir configuração de limites pré-definidos (temperatura, umidade, partículas) conforme normas ISO/ANSI.",Essencial,Estável
+RF5,Funcional,"Emitir alertas automáticos (Andon, notificações) quando limites forem excedidos.",Essencial,Pouco Estável
+RF6,Funcional,"Gerar relatórios ambientais com histórico de medições, conformidade e eventos de alerta.",Importante,Estável
+RF7,Funcional,"Gerenciar sensores (cadastrar, remover, configurar).",Desejável,Pouco Estável
+RNF1,Não Funcional,Garantir disponibilidade do sistema superior a 95%.,Essencial,Estável
+RNF2,Não Funcional,Emitir alertas em menos de 10 segundos após detecção.,Essencial,Estável
+RNF3,Não Funcional,Realizar pelo menos 1 leitura por minuto.,Essencial,Estável
+RNF4,Não Funcional,Garantir precisão das medições dentro da tolerância dos sensores.,Essencial,Pouco Estável
+RNF5,Não Funcional,Interface simples e intuitiva para operadores e engenheiros.,Importante,Estável
+RNF6,Não Funcional,Controle de acesso para administradores e operadores.,Essencial,Estável
+RNF7,Não Funcional,Suportar adição de novos sensores sem perda de desempenho.,Desejável,Pouco Estável
+RST1,Restrição,Dependência de conexão Wi-Fi estável para transmissão dos dados.,Essencial,Pouco Estável
+RST2,Restrição,Limitações de processamento do ESP32 e sensores embarcados.,Importante,Pouco Estável
+RST3,Restrição,Cumprir normas ISO 14644-1 e ANSI/ESD S20.20.,Essencial,Estável
+RST4,Restrição,Orçamento limitado para aquisição de sensores e infraestrutura.,Importante,Pouco Estável
