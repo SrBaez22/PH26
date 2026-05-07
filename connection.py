@@ -29,8 +29,6 @@ with conn.cursor() as cur:
 with conn.cursor() as cur:
 
     cur.execute("SELECT " \
-    "--data AS data_original" \
-    "--, hora AS hora_original" \
     ",((data + hora) - INTERVAL '4 hours')::DATE AS data_ajustada" \
     ", TO_CHAR((data + hora) - INTERVAL '4 hours', 'HH24:MI:SS') AS hora_ajustada" \
     ", temperatura" \
