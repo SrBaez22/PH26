@@ -10,29 +10,27 @@ with conn.cursor() as cur:
   print(cur.fetchone())
 
 
-temp_manual = 22.5
-umid_manual = 60.0
-part_manual = 100.2
-gas_manual = 17.0
+# temp_manual = 10.0
+# umid_manual = 10.0
+# part_manual = 10.0
+# gas_manual = 10.0
 
 # 2. Bloco de INSERÇÃO
-with conn.cursor() as cur:
-    comando_sql = """
-        INSERT INTO monitorador_ambiente (TEMPERATURA, UMIDADE, PARTICULAS, GAS)
-        VALUES (%s, %s, %s, %s)
-    """
-    cur.execute(comando_sql, (temp_manual, umid_manual, part_manual, gas_manual))
-    conn.commit()
-    print("Dado manual enviado com sucesso!")
+# with conn.cursor() as cur:
+#     comando_sql = """
+#         INSERT INTO monitorador_ambiente (TEMPERATURA, UMIDADE, PARTICULAS, GAS)
+#         VALUES (%s, %s, %s, %s)
+#     """
+#     cur.execute(comando_sql, (temp_manual, umid_manual, part_manual, gas_manual))
+#     conn.commit()
+#     print("Dado manual enviado com sucesso!")
 
 
 with conn.cursor() as cur:
-    # 1. Deleta a tabela antiga para resetar a estrutura
 
-    cur.execute("SELECT * FROM monitorador_ambiente;")
+    cur.execute("SELECT data AS data_original, hora AS hora_original,((data + hora) - INTERVAL '4 hours')::DATE AS data_ajustada, TO_CHAR((data + hora) - INTERVAL '4 hours', 'HH24:MI:SS') AS hora_ajustada, temperatura, umidade, particulas, gas FROM monitorador_ambiente;")
     linhas = cur.fetchall()
     print("\n--- Dados atuais no Banco Neon ---")
     for linha in linhas:
         print(linha)
-# Agora sim, se quiser fechar no final de TUDO:
 conn.close()
