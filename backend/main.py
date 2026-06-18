@@ -1,12 +1,17 @@
+import os
+from datetime import datetime, timedelta
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import psycopg2
 from psycopg2.extras import RealDictCursor
-import os
+
+load_dotenv()
+
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 app = FastAPI()
 
-# Configuração de CORS para permitir que o frontend acesse a API
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -15,12 +20,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-DATABASE_URL = 'postgresql://neondb_owner:npg_M3vNHcLF0Yew@ep-weathered-morning-aqyrfz91-pooler.c-8.us-east-1.aws.neon.tech/neondb?sslmode=require'
-
 def get_db_connection():
     try:
-        conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
-        return conn
+        return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
     except Exception as e:
         print(f"Erro ao conectar ao banco de dados: {e}")
         return None
@@ -38,34 +40,54 @@ def get_latest():
     conn = get_db_connection()
     if not conn:
         raise HTTPException(status_code=500, detail="Database connection failed")
-    
+
     try:
         with conn.cursor() as cur:
-            # Busca o último registro. Se não houver ID ou TIMESTAMP, pegamos o último inserido se possível.
-            # Aqui assumimos que se houver uma coluna 'id', ordenamos por ela.
-            # Caso contrário, pegamos tudo e retornamos o último elemento.
-            cur.execute("SELECT * FROM monitorador_ambiente")
-            rows = cur.fetchall()
-            if not rows:
+            cur.execute("SELECT * FROM monitorador_ambiente ORDER BY id DESC LIMIT 1")
+            row = cur.fetchone()
+            if not row:
                 return {}
-            return rows[-1]
+            return row
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         conn.close()
 
 @app.get("/api/history")
-def get_history(limit: int = 20):
+def get_history(limit: int = 20, hours: int = None, date_from: str = None, date_to: str = None):
     conn = get_db_connection()
     if not conn:
         raise HTTPException(status_code=500, detail="Database connection failed")
-    
+
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT * FROM monitorador_ambiente")
+            if date_from or date_to:
+                conditions = []
+                params = []
+                if date_from:
+                    conditions.append("data >= %s")
+                    params.append(date_from)
+                if date_to:
+                    conditions.append("data <= %s")
+                    params.append(date_to)
+                where = " AND ".join(conditions)
+                cur.execute(
+                    f"SELECT * FROM monitorador_ambiente WHERE {where} ORDER BY id DESC LIMIT 1000",
+                    params
+                )
+            elif hours:
+                cutoff = datetime.now() - timedelta(hours=hours)
+                cur.execute(
+                    "SELECT * FROM monitorador_ambiente WHERE created_at >= %s ORDER BY id DESC LIMIT 500",
+                    (cutoff,)
+                )
+            else:
+                cur.execute(
+                    "SELECT * FROM monitorador_ambiente ORDER BY id DESC LIMIT %s",
+                    (limit,)
+                )
             rows = cur.fetchall()
-            # Retorna os últimos 'limit' registros
-            return rows[-limit:] if len(rows) > limit else rows
+            return rows
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:

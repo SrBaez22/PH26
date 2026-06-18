@@ -1,0 +1,17 @@
+# Credenciais e variáveis de ambiente
+.env
+
+# Ambiente virtual Python
+.venv/
+
+# Cache Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Build frontend
+frontend/dist/
+frontend/dist-ssr/
+
+# Logs
+*.log
