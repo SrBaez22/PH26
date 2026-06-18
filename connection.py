@@ -1,38 +1,57 @@
-import os
 import psycopg2
+import json
+import os
+from datetime import datetime
+from dotenv import load_dotenv
+import paho.mqtt.client as mqtt
 
-database_url = 'postgresql://neondb_owner:npg_M3vNHcLF0Yew@ep-weathered-morning-aqyrfz91-pooler.c-8.us-east-1.aws.neon.tech/neondb?sslmode=require'
+load_dotenv()
 
-conn = psycopg2.connect(database_url)
+DATABASE_URL = os.getenv("DATABASE_URL")
+MQTT_BROKER  = "broker.hivemq.com"
+MQTT_PORT    = 1883
+MQTT_TOPIC   = "projeto/monitorador_ambiente/dados"
 
-with conn.cursor() as cur:
-  cur.execute("SELECT version()")
-  print(cur.fetchone())
+def on_connect(client, userdata, flags, reason_code, properties):
+    if reason_code == 0:
+        print(f"[MQTT] Conectado ao broker! Assinando '{MQTT_TOPIC}'...")
+        client.subscribe(MQTT_TOPIC)
+    else:
+        print(f"[MQTT] Falha na conexão. Código: {reason_code}")
 
+def on_message(client, userdata, msg):
+    try:
+        payload = msg.payload.decode("utf-8")
+        dados = json.loads(payload)
+        print(f"\n[MQTT] Novo dado recebido do ESP32: {dados}")
 
-temp_manual = 22.5
-umid_manual = 60.0
-part_manual = 100.2
-gas_manual = 17.0
+        temp = dados.get("temperatura")
+        umid = dados.get("umidade")
+        part = dados.get("particulas")
+        gas  = dados.get("gas")
 
-# 2. Bloco de INSERÇÃO
-with conn.cursor() as cur:
-    comando_sql = """
-        INSERT INTO monitorador_ambiente (TEMPERATURA, UMIDADE, PARTICULAS, GAS)
-        VALUES (%s, %s, %s, %s)
-    """
-    cur.execute(comando_sql, (temp_manual, umid_manual, part_manual, gas_manual))
-    conn.commit()
-    print("Dado manual enviado com sucesso!")
+        now = datetime.now()
+        conn = psycopg2.connect(DATABASE_URL)
+        with conn.cursor() as cur:
+            cur.execute(
+                """INSERT INTO monitorador_ambiente
+                   (temperatura, umidade, particulas, gas, data, hora, created_at)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+                (temp, umid, part, gas, now.date(), now.time(), now)
+            )
+            conn.commit()
+            print(f"[Banco Neon] Dados salvos com sucesso! ({now.strftime('%d/%m/%Y %H:%M:%S')})")
+        conn.close()
 
+    except Exception as e:
+        print(f"[ERRO] {e}")
 
-with conn.cursor() as cur:
-    # 1. Deleta a tabela antiga para resetar a estrutura
+client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+client.on_connect = on_connect
+client.on_message = on_message
 
-    cur.execute("SELECT * FROM monitorador_ambiente;")
-    linhas = cur.fetchall()
-    print("\n--- Dados atuais no Banco Neon ---")
-    for linha in linhas:
-        print(linha)
-# Agora sim, se quiser fechar no final de TUDO:
-conn.close()
+print("[Python Worker] Conectando ao Broker MQTT...")
+client.connect(MQTT_BROKER, MQTT_PORT, 60)
+
+print(f"[Python Worker] Aguardando dados no tópico '{MQTT_TOPIC}'...")
+client.loop_forever()
