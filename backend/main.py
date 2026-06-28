@@ -21,11 +21,15 @@ app.add_middleware(
 )
 
 def get_db_connection():
-    try:
-        return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
-    except Exception as e:
-        print(f"Erro ao conectar ao banco de dados: {e}")
-        return None
+    for tentativa in range(1, 4):
+        try:
+            return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor, connect_timeout=30)
+        except Exception as e:
+            print(f"Erro ao conectar ao banco (tentativa {tentativa}/3): {e}")
+            if tentativa < 3:
+                import time
+                time.sleep(5)
+    return None
 
 @app.get("/api/status")
 def get_status():
