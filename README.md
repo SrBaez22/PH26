@@ -40,13 +40,13 @@ Banco Neon (PostgreSQL cloud)
 
 ```
 PH26/
-├── esp_32.ino          # Código do ESP32 (copiar no Wokwi)
+├── esp_32.ino          # Código do ESP32
 ├── connection.py       # Worker MQTT: recebe dados e salva no banco
 ├── limpar_banco.py     # Script interativo para limpeza do banco de dados
 ├── iniciar.bat         # Inicia os 3 serviços de uma vez (Windows)
 ├── parar.bat           # Para os 3 serviços de uma vez (Windows)
 ├── requirements.txt    # Dependências Python
-├── .env                # Variáveis de ambiente (NÃO versionar)
+├── .env                # Variáveis de ambiente
 ├── .gitignore          # Ignora .env, .venv, dist, logs
 ├── backend/
 │   └── main.py         # API FastAPI (porta 8000)

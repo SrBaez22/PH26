@@ -19,30 +19,45 @@ def on_connect(client, userdata, flags, reason_code, properties):
     else:
         print(f"[MQTT] Falha na conexão. Código: {reason_code}")
 
+def salvar_no_banco(dados: dict):
+    now = datetime.now()
+    for tentativa in range(1, 4):
+        try:
+            conn = psycopg2.connect(DATABASE_URL, connect_timeout=30)
+            with conn.cursor() as cur:
+                cur.execute(
+                    """INSERT INTO monitorador_ambiente
+                       (temperatura, umidade, particulas, gas, data, hora, created_at)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+                    (
+                        dados.get("temperatura"),
+                        dados.get("umidade"),
+                        dados.get("particulas"),
+                        dados.get("gas"),
+                        now.date(),
+                        now.time(),
+                        now,
+                    )
+                )
+                conn.commit()
+            conn.close()
+            print(f"[Banco Neon] Dados salvos com sucesso! ({now.strftime('%d/%m/%Y %H:%M:%S')})")
+            return
+        except Exception as e:
+            print(f"[Banco Neon] Tentativa {tentativa}/3 falhou: {e}")
+            if tentativa < 3:
+                import time
+                time.sleep(5)
+    print("[Banco Neon] Falha após 3 tentativas. Dado perdido.")
+
 def on_message(client, userdata, msg):
     try:
         payload = msg.payload.decode("utf-8")
         dados = json.loads(payload)
         print(f"\n[MQTT] Novo dado recebido do ESP32: {dados}")
-
-        temp = dados.get("temperatura")
-        umid = dados.get("umidade")
-        part = dados.get("particulas")
-        gas  = dados.get("gas")
-
-        now = datetime.now()
-        conn = psycopg2.connect(DATABASE_URL)
-        with conn.cursor() as cur:
-            cur.execute(
-                """INSERT INTO monitorador_ambiente
-                   (temperatura, umidade, particulas, gas, data, hora, created_at)
-                   VALUES (%s, %s, %s, %s, %s, %s, %s)""",
-                (temp, umid, part, gas, now.date(), now.time(), now)
-            )
-            conn.commit()
-            print(f"[Banco Neon] Dados salvos com sucesso! ({now.strftime('%d/%m/%Y %H:%M:%S')})")
-        conn.close()
-
+        salvar_no_banco(dados)
+    except json.JSONDecodeError as e:
+        print(f"[MQTT] JSON inválido: {e}")
     except Exception as e:
         print(f"[ERRO] {e}")
 
